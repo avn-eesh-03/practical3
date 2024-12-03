@@ -5,7 +5,7 @@ pipeline {
         stage('Checkout') {
             steps {
                 // Pull the code from your GitHub repository
-                git branch: 'master', url: 'https://github.com/avn-eesh-03/practical3.git'
+                git branch: 'master', url: 'https://github.com/avn-eesh-03/practical3'
             }
         }
         stage('Build') {
