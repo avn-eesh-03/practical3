@@ -1,44 +1,69 @@
 pipeline {
-    agent any // Specifies where the pipeline should run
+    agent any
+
+    environment {
+        // Define any environment variables here
+        JAVA_HOME = '/usr/lib/jvm/java-11'
+        PATH = "${JAVA_HOME}/bin:${env.PATH}"
+    }
 
     stages {
-        stage('Checkout Code') {
+        stage('Checkout') {
             steps {
-                checkout scm // Check out the code from the repository
+                echo 'Checking out code from version control'
+                checkout scm // Automatically checks out the repository configured in the Jenkins job
             }
         }
+
         stage('Build') {
             steps {
-                echo 'Building the application...'
-                // Example: Build commands (e.g., Maven, Gradle, npm)
-                sh 'mvn clean package' // Example: Maven build
+                echo 'Building the project'
+                sh './gradlew build' // Replace with your build tool command, e.g., Maven, Gradle, npm, etc.
             }
         }
+
         stage('Test') {
             steps {
-                echo 'Running tests...'
-                // Example: Test commands
-                sh 'mvn test'
+                echo 'Running tests'
+                sh './gradlew test' // Replace with your test command
             }
         }
+
+        stage('Static Code Analysis') {
+            steps {
+                echo 'Running static code analysis'
+                sh 'sonar-scanner' // Optional step for static analysis using tools like SonarQube
+            }
+        }
+
+        stage('Package') {
+            steps {
+                echo 'Packaging the application'
+                sh './gradlew assemble' // Replace with your packaging command
+            }
+        }
+
         stage('Deploy') {
             steps {
-                echo 'Deploying the application...'
-                // Example: Deploy commands (e.g., copying files to a server)
-                sh 'scp target/myapp.jar user@server:/path/to/deploy'
+                echo 'Deploying the application'
+                sh 'scp build/libs/app.jar user@server:/path/to/deploy' // Replace with your deployment process
             }
         }
     }
 
     post {
         always {
-            echo 'Pipeline finished!'
+            echo 'Cleaning up workspace'
+            cleanWs() // Cleans the workspace after build
         }
+
         success {
-            echo 'Pipeline succeeded!'
+            echo 'Build completed successfully!'
         }
+
         failure {
-            echo 'Pipeline failed!'
+            echo 'Build failed. Sending notification...'
+            // Add a notification step here if needed
         }
     }
 }
