@@ -2,51 +2,55 @@ pipeline {
     agent any
 
     environment {
-        // Define any environment variables here
         JAVA_HOME = '/usr/lib/jvm/java-11'
-        PATH = "${JAVA_HOME}/bin:${env.PATH}"
+        PATH = "/usr/lib/jvm/java-11/bin:${env.PATH}"
     }
 
     stages {
         stage('Checkout') {
             steps {
                 echo 'Checking out code from version control'
-                checkout scm // Automatically checks out the repository configured in the Jenkins job
+                checkout scm
+                sh 'ls -l' // Debugging step to list files
             }
         }
 
         stage('Build') {
             steps {
                 echo 'Building the project'
-                sh './gradlew build' // Replace with your build tool command, e.g., Maven, Gradle, npm, etc.
+                sh './gradlew build'
             }
         }
 
         stage('Test') {
             steps {
                 echo 'Running tests'
-                sh './gradlew test' // Replace with your test command
+                sh './gradlew test'
             }
         }
 
         stage('Static Code Analysis') {
             steps {
                 echo 'Running static code analysis'
-                sh 'sonar-scanner' // Optional step for static analysis using tools like SonarQube
+                withSonarQubeEnv('SonarQube Server') {
+                    sh 'sonar-scanner'
+                }
             }
         }
 
         stage('Package') {
             steps {
                 echo 'Packaging the application'
-                sh './gradlew assemble' // Replace with your packaging command
+                sh './gradlew assemble'
             }
         }
 
         stage('Deploy') {
             steps {
                 echo 'Deploying the application'
-                sh 'scp build/libs/app.jar user@server:/path/to/deploy' // Replace with your deployment process
+                withCredentials([sshUserPrivateKey(credentialsId: 'ssh-credentials-id', keyFileVariable: 'SSH_KEY')]) {
+                    sh 'scp -i $SSH_KEY build/libs/app.jar user@server:/path/to/deploy'
+                }
             }
         }
     }
@@ -54,7 +58,7 @@ pipeline {
     post {
         always {
             echo 'Cleaning up workspace'
-            cleanWs() // Cleans the workspace after build
+            cleanWs()
         }
 
         success {
@@ -63,7 +67,6 @@ pipeline {
 
         failure {
             echo 'Build failed. Sending notification...'
-            // Add a notification step here if needed
         }
     }
 }
